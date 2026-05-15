@@ -57,6 +57,13 @@ The `botName` field supports [qualified names](../features/peers.md#qualified-na
 |--------|------|-------------|
 | `GET` | `/api/peers` | List peers and their health status |
 
+### Peer Memory Cache
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/peer-memory/search?q=` | Search cached peer MetaMemory documents |
+| `GET` | `/api/peer-memory/documents/:peerName/:docId` | Read a cached peer MetaMemory document |
+
 ### Skill Hub
 
 | Method | Path | Description |

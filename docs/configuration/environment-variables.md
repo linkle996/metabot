@@ -80,6 +80,8 @@ Falls back to the first Feishu bot's credentials if not set.
 | `METABOT_PEER_POLL_INTERVAL_MS` | `30000` | Peer poll interval |
 | `METABOT_PEER_CACHE_PATH` | `./data/peer-cache.json` | Persistent peer artifact cache |
 | `METABOT_PEER_SKILL_CACHE_CONTENTS` | `true` | Cache full peer `SKILL.md` content for offline install fallback; set to `false` for summaries only |
+| `METABOT_PEER_MEMORY_CACHE_ENABLED` | `true` | Mirror peer MetaMemory documents into the local read-only peer cache |
+| `METABOT_PEER_MEMORY_CACHE_LIMIT` | `200` | Maximum peer memory documents mirrored per peer poll |
 
 ## Remote Access
 

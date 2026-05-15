@@ -33,6 +33,7 @@ import {
   handleSkillHubRoutes,
   handleManifestRoutes,
   handleExecutorRoutes,
+  handlePeerMemoryRoutes,
 } from './routes/index.js';
 import type { RouteContext } from './routes/index.js';
 import type { InstanceIdentity } from '../cluster/identity.js';
@@ -106,6 +107,7 @@ export function startApiServer(options: ApiServerOptions): http.Server {
     handleRtcRoutes,
     handleSessionRoutes,
     handleManifestRoutes,
+    handlePeerMemoryRoutes,
     handleSkillHubRoutes,
     handleExecutorRoutes,
   ];

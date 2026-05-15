@@ -404,6 +404,8 @@ MEMORY_INSTANCE_TOKEN=instance-scoped-token
 | `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 当前实例默认 memory namespace |
 | `METABOT_PEER_CACHE_PATH` | `./data/peer-cache.json` | Peer artifact 持久缓存；Skill Hub 可在 owner 离线时继续发现/安装缓存 skill |
 | `METABOT_PEER_SKILL_CACHE_CONTENTS` | true | 是否缓存 peer skill 的完整 `SKILL.md` 内容 |
+| `METABOT_PEER_MEMORY_CACHE_ENABLED` | true | 是否将 peer MetaMemory 文档镜像成本地只读 cache |
+| `METABOT_PEER_MEMORY_CACHE_LIMIT` | 200 | 每次 peer 拉取最多镜像的 memory 文档数 |
 | `WIKI_SYNC_ENABLED` | true | 启用 MetaMemory→飞书知识库同步 |
 | `WIKI_SPACE_NAME` | MetaMemory | 飞书知识库空间名称 |
 | `WIKI_AUTO_SYNC` | true | MetaMemory 变更时自动同步 |

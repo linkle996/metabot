@@ -368,4 +368,116 @@ describe('PeerManager', () => {
     expect(skill?.skillMd).toBe('# Cached Skill\n');
     expect(skill?.referencesTar?.toString()).toBe('cached refs');
   });
+
+  it('searches cached peer memory after a peer goes offline', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/bots')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ bots: [] }) });
+      }
+      if (url.includes('/api/skills')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ skills: [] }) });
+      }
+      if (url.includes('/memory/api/documents?')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{
+            id: 'doc-1',
+            title: 'Deployment Notes',
+            folder_id: 'root',
+            path: '/ops/deployment-notes',
+            tags: ['ops'],
+            created_by: 'alice',
+            created_at: '2026-05-01T00:00:00.000Z',
+            updated_at: '2026-05-02T00:00:00.000Z',
+          }]),
+        });
+      }
+      if (url.includes('/memory/api/documents/doc-1')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: 'doc-1',
+            title: 'Deployment Notes',
+            folder_id: 'root',
+            path: '/ops/deployment-notes',
+            content: 'Use the internal cluster URL for peer bootstrap.',
+            tags: ['ops'],
+            created_by: 'alice',
+            created_at: '2026-05-01T00:00:00.000Z',
+            updated_at: '2026-05-02T00:00:00.000Z',
+          }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected URL ${url}`));
+    }));
+
+    manager = new PeerManager([
+      { name: 'alice', url: 'http://localhost:9200' },
+    ], createLogger());
+    await manager.refreshAll();
+    manager.destroy();
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
+    manager = new PeerManager([
+      { name: 'alice', url: 'http://localhost:9200' },
+    ], createLogger());
+    await manager.refreshAll();
+
+    const results = manager.searchCachedPeerMemory('cluster bootstrap', 10);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      id: 'doc-1',
+      title: 'Deployment Notes',
+      peerName: 'alice',
+      stale: true,
+    });
+  });
+
+  it('returns cached peer memory documents by peer and document id', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/bots')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ bots: [] }) });
+      }
+      if (url.includes('/api/skills')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ skills: [] }) });
+      }
+      if (url.includes('/memory/api/documents?')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{
+            id: 'doc-2',
+            title: 'Shared Runbook',
+            folder_id: 'root',
+            path: '/runbooks/shared',
+            tags: [],
+            updated_at: '2026-05-03T00:00:00.000Z',
+          }]),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          id: 'doc-2',
+          title: 'Shared Runbook',
+          folder_id: 'root',
+          path: '/runbooks/shared',
+          content: '# Runbook',
+          tags: [],
+          created_by: 'alice',
+          created_at: '2026-05-03T00:00:00.000Z',
+          updated_at: '2026-05-03T00:00:00.000Z',
+        }),
+      });
+    }));
+
+    manager = new PeerManager([
+      { name: 'alice', url: 'http://localhost:9200' },
+    ], createLogger());
+    await manager.refreshAll();
+
+    const doc = manager.getCachedPeerMemoryDocument('alice', 'doc-2');
+    expect(doc?.content).toBe('# Runbook');
+    expect(doc?.peerName).toBe('alice');
+    expect(doc?.stale).toBe(false);
+  });
 });

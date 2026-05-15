@@ -28,6 +28,38 @@ export interface PeerSkillInfo {
   hasCachedContent?: boolean;
 }
 
+export interface PeerMemoryDocument {
+  id: string;
+  title: string;
+  folder_id: string;
+  path: string;
+  content: string;
+  tags: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  peerUrl: string;
+  peerName: string;
+  stale?: boolean;
+  cachedAt: number;
+  lastSeenAt: number;
+}
+
+export interface PeerMemorySearchResult {
+  id: string;
+  title: string;
+  path: string;
+  snippet: string;
+  tags: string[];
+  created_by: string;
+  updated_at: string;
+  peerUrl: string;
+  peerName: string;
+  stale: boolean;
+  cachedAt: number;
+  lastSeenAt: number;
+}
+
 export interface PeerStatus {
   name: string;
   url: string;
@@ -63,9 +95,30 @@ interface CachedPeerSkills {
   contents: Record<string, CachedPeerSkillContent>;
 }
 
+interface CachedPeerMemoryDocument {
+  id: string;
+  title: string;
+  folder_id: string;
+  path: string;
+  content: string;
+  tags: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  cachedAt: number;
+}
+
+interface CachedPeerMemory {
+  peerName: string;
+  peerUrl: string;
+  lastSeenAt: number;
+  documents: Record<string, CachedPeerMemoryDocument>;
+}
+
 interface PeerCacheFile {
   version: 1;
   peers: Record<string, CachedPeerSkills>;
+  memory?: Record<string, CachedPeerMemory>;
 }
 
 const DEFAULT_POLL_INTERVAL_MS = 30_000;
@@ -208,7 +261,10 @@ export class PeerManager {
       state.lastHealthy = Date.now();
       state.error = undefined;
       this.cachePeerSkillSummaries(config, peerSkills, state.lastHealthy);
-      await this.refreshPeerSkillContentCache(config, peerSkills, headers);
+      await Promise.allSettled([
+        this.refreshPeerSkillContentCache(config, peerSkills, headers),
+        this.refreshPeerMemoryCache(config, headers, state.lastHealthy),
+      ]);
 
       this.logger.debug(
         { peerName: config.name, peerUrl: config.url, botCount: directBots.length, skillCount: peerSkills.length },
@@ -236,7 +292,7 @@ export class PeerManager {
     } catch {
       // Missing or invalid cache is non-fatal.
     }
-    return { version: 1, peers: {} };
+    return { version: 1, peers: {}, memory: {} };
   }
 
   private saveCache(): void {
@@ -313,6 +369,90 @@ export class PeerManager {
     for (const skill of peerCache.skills) {
       skill.hasCachedContent = !!peerCache.contents[skill.name];
     }
+    this.saveCache();
+  }
+
+  private getMemoryCache(): Record<string, CachedPeerMemory> {
+    if (!this.cache.memory) this.cache.memory = {};
+    return this.cache.memory;
+  }
+
+  private async fetchPeerMemoryJson(config: PeerConfig, apiPath: string, headers: Record<string, string>): Promise<unknown | null> {
+    try {
+      const response = await proxyFetch(`${config.url}/memory${apiPath}`, {
+        headers,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  private unwrapMemoryDocuments(raw: unknown): Array<{
+    id: string;
+    title: string;
+    folder_id: string;
+    path: string;
+    content?: string;
+    tags?: string[];
+    created_by?: string;
+    created_at?: string;
+    updated_at?: string;
+  }> {
+    if (Array.isArray(raw)) return raw as any[];
+    if (raw && typeof raw === 'object') {
+      const obj = raw as Record<string, unknown>;
+      if (Array.isArray(obj.documents)) return obj.documents as any[];
+      if (Array.isArray(obj.results)) return obj.results as any[];
+      if (Array.isArray(obj.data)) return obj.data as any[];
+    }
+    return [];
+  }
+
+  private async refreshPeerMemoryCache(config: PeerConfig, headers: Record<string, string>, lastSeenAt: number): Promise<void> {
+    if (process.env.METABOT_PEER_MEMORY_CACHE_ENABLED === 'false') return;
+    const limit = Math.min(Math.max(parseInt(process.env.METABOT_PEER_MEMORY_CACHE_LIMIT || '200', 10) || 200, 1), 500);
+    const raw = await this.fetchPeerMemoryJson(config, `/api/documents?limit=${limit}`, headers);
+    const summaries = this.unwrapMemoryDocuments(raw);
+    if (summaries.length === 0) return;
+
+    const memoryCache = this.getMemoryCache();
+    const peerCache = memoryCache[config.name] || {
+      peerName: config.name,
+      peerUrl: config.url,
+      lastSeenAt,
+      documents: {},
+    };
+    peerCache.peerUrl = config.url;
+    peerCache.lastSeenAt = lastSeenAt;
+
+    const tasks = summaries.map(async (summary) => {
+      if (!summary.id) return;
+      const cached = peerCache.documents[summary.id];
+      if (cached && cached.updated_at && summary.updated_at && cached.updated_at === summary.updated_at) return;
+      const fullRaw = await this.fetchPeerMemoryJson(config, `/api/documents/${encodeURIComponent(summary.id)}`, headers);
+      const full = fullRaw && typeof fullRaw === 'object' && 'document' in fullRaw
+        ? (fullRaw as any).document
+        : fullRaw;
+      if (!full || typeof full !== 'object') return;
+      const doc = full as any;
+      peerCache.documents[summary.id] = {
+        id: doc.id || summary.id,
+        title: doc.title || summary.title || '',
+        folder_id: doc.folder_id || summary.folder_id || 'root',
+        path: doc.path || summary.path || '',
+        content: doc.content || '',
+        tags: Array.isArray(doc.tags) ? doc.tags : Array.isArray(summary.tags) ? summary.tags : [],
+        created_by: doc.created_by || summary.created_by || '',
+        created_at: doc.created_at || summary.created_at || '',
+        updated_at: doc.updated_at || summary.updated_at || '',
+        cachedAt: Date.now(),
+      };
+    });
+    await Promise.allSettled(tasks);
+    memoryCache[config.name] = peerCache;
     this.saveCache();
   }
 
@@ -441,6 +581,60 @@ export class PeerManager {
         ? Buffer.from(cached.referencesTarBase64, 'base64')
         : undefined,
     };
+  }
+
+  getCachedPeerMemoryDocument(peerName: string, docId: string): PeerMemoryDocument | null {
+    const peerCache = this.cache.memory?.[peerName];
+    const doc = peerCache?.documents[docId];
+    if (!peerCache || !doc) return null;
+    const state = this.peers.get(peerName);
+    return {
+      ...doc,
+      peerName: peerCache.peerName,
+      peerUrl: peerCache.peerUrl,
+      stale: !state?.healthy,
+      lastSeenAt: peerCache.lastSeenAt,
+    };
+  }
+
+  searchCachedPeerMemory(query: string, limit = 20): PeerMemorySearchResult[] {
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return [];
+    const results: PeerMemorySearchResult[] = [];
+    for (const [peerName, peerCache] of Object.entries(this.cache.memory || {})) {
+      const state = this.peers.get(peerName);
+      for (const doc of Object.values(peerCache.documents)) {
+        const haystack = `${doc.title}\n${doc.path}\n${doc.tags.join(' ')}\n${doc.content}`.toLowerCase();
+        if (!terms.every((term) => haystack.includes(term))) continue;
+        results.push({
+          id: doc.id,
+          title: doc.title,
+          path: doc.path,
+          snippet: this.buildMemorySnippet(doc.content, terms[0]),
+          tags: doc.tags,
+          created_by: doc.created_by,
+          updated_at: doc.updated_at,
+          peerName: peerCache.peerName,
+          peerUrl: peerCache.peerUrl,
+          stale: !state?.healthy,
+          cachedAt: doc.cachedAt,
+          lastSeenAt: peerCache.lastSeenAt,
+        });
+      }
+    }
+    return results
+      .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
+      .slice(0, Math.min(Math.max(limit, 1), 100));
+  }
+
+  private buildMemorySnippet(content: string, term: string): string {
+    const normalized = content.replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+    const index = normalized.toLowerCase().indexOf(term);
+    if (index < 0) return normalized.slice(0, 180);
+    const start = Math.max(index - 70, 0);
+    const end = Math.min(index + 110, normalized.length);
+    return `${start > 0 ? '...' : ''}${normalized.slice(start, end)}${end < normalized.length ? '...' : ''}`;
   }
 
   /** Return health status of all configured peers. */

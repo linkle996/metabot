@@ -80,6 +80,8 @@
 | `METABOT_PEER_POLL_INTERVAL_MS` | `30000` | peer 拉取间隔 |
 | `METABOT_PEER_CACHE_PATH` | `./data/peer-cache.json` | peer artifact 持久缓存路径 |
 | `METABOT_PEER_SKILL_CACHE_CONTENTS` | `true` | 缓存 peer `SKILL.md` 完整内容，owner 离线时仍可安装；设为 `false` 只缓存摘要 |
+| `METABOT_PEER_MEMORY_CACHE_ENABLED` | `true` | 将 peer MetaMemory 文档镜像到本地只读 peer cache |
+| `METABOT_PEER_MEMORY_CACHE_LIMIT` | `200` | 每次 peer 拉取最多镜像的 memory 文档数 |
 
 ## 远程访问
 

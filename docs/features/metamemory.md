@@ -41,9 +41,11 @@ These commands get quick responses without spawning Claude — they use the `Mem
 ```bash
 # Read
 mm search "deployment guide"        # full-text search
+mm peer-search "deployment guide"   # search cached peer memory
 mm list                             # list documents
 mm folders                          # folder tree
 mm path /projects/my-doc            # get doc by path
+mm peer-get alice DOC_ID            # read a cached peer document
 
 # Write
 echo '# Notes' | mm create "Title" --folder ID --tags "dev"
@@ -93,6 +95,19 @@ See [Security](../concepts/security.md#metamemory-access-control) for details.
 | `MEMORY_INSTANCE_TOKEN` | — | Scoped token for this instance namespace |
 | `META_MEMORY_URL` | `http://localhost:8100` | MetaMemory URL (for CLI) |
 | `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | Default namespace for this instance |
+| `METABOT_PEER_MEMORY_CACHE_ENABLED` | `true` | Mirror peer MetaMemory documents into local read-only cache |
+| `METABOT_PEER_MEMORY_CACHE_LIMIT` | `200` | Maximum peer memory documents mirrored per peer poll |
+
+## Peer Mirror
+
+When peers are configured, MetaBot mirrors readable peer MetaMemory documents into the local peer artifact cache. The mirror is read-only and keeps the owner instance as the source of truth. If a developer machine goes offline, other MetaBot instances can still search cached peer memory through:
+
+```bash
+mm peer-search "cluster bootstrap"
+mm peer-get alice DOC_ID
+```
+
+The API surface is `GET /api/peer-memory/search?q=` and `GET /api/peer-memory/documents/:peerName/:docId`.
 
 ## Auto-Sync to Wiki
 

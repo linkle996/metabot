@@ -57,6 +57,13 @@ Authorization: Bearer <API_SECRET>
 |------|------|------|
 | `GET` | `/api/peers` | 列出 peer 及健康状态 |
 
+### Peer Memory Cache
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/peer-memory/search?q=` | 搜索缓存的 peer MetaMemory 文档 |
+| `GET` | `/api/peer-memory/documents/:peerName/:docId` | 读取缓存的 peer MetaMemory 文档 |
+
 ### Skill Hub
 
 | 方法 | 路径 | 说明 |
