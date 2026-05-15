@@ -25,7 +25,10 @@
 | `METABOT_CLUSTER_URL` | — | 可选的集群注册/引导 URL；当前 bootstrap 阶段会自动作为 peer 加入 |
 | `METABOT_CLUSTER_SECRET` | — | `METABOT_CLUSTER_URL` 可选 Bearer Token |
 | `METABOT_DISCOVERY_MODE` | `auto` | 发现模式：`auto`、`static`、`standalone` 或 `off` |
-| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 当前实例默认的 MetaMemory namespace |
+| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 当前实例兜底 MetaMemory namespace |
+| `METABOT_BOT_MEMORY_NAMESPACE` | `/bots/default` | 单 Bot 模式下的稳定写入 namespace 覆盖 |
+| `METABOT_MEMORY_PROJECT` | — | 单 Bot 模式项目名；未设置 `METABOT_BOT_MEMORY_NAMESPACE` 时推导 `/projects/<slug>` |
+| `METABOT_MEMORY_WRITE_NAMESPACES` | — | 额外授予 `MEMORY_INSTANCE_TOKEN` 写权限的 namespace，逗号分隔 |
 
 ## Claude Code
 
@@ -46,9 +49,9 @@
 | `MEMORY_SECRET` | `API_SECRET` | MetaMemory 认证（旧版） |
 | `MEMORY_ADMIN_TOKEN` | — | 管理员 Token（完整访问） |
 | `MEMORY_TOKEN` | — | 读者 Token（仅 shared 文件夹） |
-| `MEMORY_INSTANCE_TOKEN` | — | 实例级 scoped token；可写 `METABOT_MEMORY_NAMESPACE`，可读 shared 内容 |
+| `MEMORY_INSTANCE_TOKEN` | — | 实例级 scoped token；可写实例 namespace 以及已配置的 bot/project namespace，可读 shared 内容 |
 | `META_MEMORY_URL` | `http://localhost:8100` | MetaMemory 地址（CLI 远程访问） |
-| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | Agent 默认写入的 namespace；namespace ACL 会分阶段落地 |
+| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 实例兜底 namespace；Agent 写入优先使用 bot/project namespace |
 
 ## 飞书服务应用
 

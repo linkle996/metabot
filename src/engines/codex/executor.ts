@@ -173,6 +173,13 @@ export class CodexExecutor {
     const model = options.model ?? codexConfig.model;
     const modelMetadata = resolveCodexModelMetadata(codexConfig, model);
     const fullPrompt = this.buildPromptWithContext(prompt, outputsDir, apiContext);
+    const memoryEnv = apiContext?.memoryNamespace
+      ? {
+          METABOT_MEMORY_NAMESPACE: apiContext.memoryNamespace,
+          METABOT_BOT_MEMORY_NAMESPACE: apiContext.memoryNamespace,
+          ...(apiContext.memoryProject ? { METABOT_MEMORY_PROJECT: apiContext.memoryProject } : {}),
+        }
+      : {};
     const queue = new AsyncQueue<SDKMessage>();
     const state = createCodexTranslatorState({
       model: modelMetadata.model,
@@ -226,7 +233,7 @@ export class CodexExecutor {
     try {
       child = spawn(codexConfig.executable || CODEX_EXECUTABLE, args, {
         cwd,
-        env: { ...process.env, ...(codexConfig.env ?? {}) },
+        env: { ...process.env, ...memoryEnv, ...(codexConfig.env ?? {}) },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (err: any) {
@@ -311,6 +318,16 @@ export class CodexExecutor {
       sections.push(
         `## MetaBot API\nYou are running as bot "${apiContext.botName}" in chat "${apiContext.chatId}".\nUse the /metabot skill for full API documentation (agent bus, scheduling, bot management).`,
       );
+
+      if (apiContext.memoryNamespace) {
+        sections.push(
+          [
+            '## MetaMemory',
+            `Default writable namespace for this bot: \`${apiContext.memoryNamespace}\`.`,
+            'When saving project or bot-owned knowledge, write under this namespace instead of the instance fallback. Use shared/project folders outside this namespace only when the user explicitly asks to publish shared knowledge.',
+          ].join('\n'),
+        );
+      }
 
       if (apiContext.groupMembers && apiContext.groupMembers.length > 0) {
         const others = apiContext.groupMembers.filter((m) => m !== apiContext.botName);

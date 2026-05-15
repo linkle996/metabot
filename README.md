@@ -238,11 +238,13 @@ MetaBot 支持 4 种方式与你的 Agent 团队交互：
 
 ### 内网联邦 — MetaMemory / Skill Hub
 
-每个 MetaBot 实例首次启动会生成稳定身份，默认写入自己的 memory namespace：
+每个 MetaBot 实例首次启动会生成稳定身份，作为兜底 memory namespace；每个 bot 还可以绑定稳定项目 namespace：
 
 ```text
 ~/.metabot/identity.json
 /instances/<instanceId>/...
+/projects/<project>/...
+/bots/<botName>/...
 ```
 
 内网里如果有一个稳定 MetaBot/cluster 地址，只需要配置：
@@ -253,7 +255,7 @@ METABOT_CLUSTER_SECRET=optional-token
 MEMORY_INSTANCE_TOKEN=instance-scoped-token
 ```
 
-`METABOT_CLUSTER_URL` 会自动作为 peer 加入，当前实例就能发现对方的 Bot 和 Skill。`MEMORY_INSTANCE_TOKEN` 只能写当前实例的 `METABOT_MEMORY_NAMESPACE`，读共享内容；管理员 token 仍保留完整访问权限。
+`METABOT_CLUSTER_URL` 会自动作为 peer 加入，当前实例就能发现对方的 Bot 和 Skill。`MEMORY_INSTANCE_TOKEN` 可写当前实例兜底 namespace 以及已配置的 bot/project namespace，读共享内容；管理员 token 仍保留完整访问权限。
 
 ### 定时任务（Claude Code 原生）
 
@@ -397,11 +399,13 @@ MEMORY_INSTANCE_TOKEN=instance-scoped-token
 | `MEMORY_PORT` | 8100 | MetaMemory 端口 |
 | `MEMORY_ADMIN_TOKEN` | — | 管理员 Token（完整访问） |
 | `MEMORY_TOKEN` | — | 读者 Token（仅共享文件夹） |
-| `MEMORY_INSTANCE_TOKEN` | — | 实例级 Token（可写自己的 namespace，可读共享内容） |
+| `MEMORY_INSTANCE_TOKEN` | — | 实例级 Token（可写实例兜底 namespace 和配置的 bot/project namespace，可读共享内容） |
 | `METABOT_INSTANCE_ID` | 自动生成 | 当前 MetaBot 实例 ID，用于联邦发现和 memory namespace |
 | `METABOT_CLUSTER_URL` | — | 可选的内网 cluster/registry 引导地址，当前会自动作为 peer 加入 |
 | `METABOT_CLUSTER_SECRET` | — | `METABOT_CLUSTER_URL` 的可选 Token |
-| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 当前实例默认 memory namespace |
+| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 当前实例兜底 memory namespace |
+| `METABOT_BOT_MEMORY_NAMESPACE` | `/bots/default` | 单 Bot 稳定写入 namespace 覆盖 |
+| `METABOT_MEMORY_PROJECT` | — | 单 Bot 项目名，推导 `/projects/<slug>` |
 | `METABOT_PEER_CACHE_PATH` | `./data/peer-cache.json` | Peer artifact 持久缓存；Skill Hub 可在 owner 离线时继续发现/安装缓存 skill |
 | `METABOT_PEER_SKILL_CACHE_CONTENTS` | true | 是否缓存 peer skill 的完整 `SKILL.md` 内容 |
 | `METABOT_PEER_MEMORY_CACHE_ENABLED` | true | 是否将 peer MetaMemory 文档镜像成本地只读 cache |

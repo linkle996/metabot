@@ -36,6 +36,9 @@ export async function handleManifestRoutes(
     },
     memory: {
       namespace: instance.memoryNamespace,
+      writableNamespaces: process.env.METABOT_MEMORY_NAMESPACES
+        ? process.env.METABOT_MEMORY_NAMESPACES.split(',').filter(Boolean)
+        : [instance.memoryNamespace],
       mode: 'namespace-readwrite',
     },
     stats: {

@@ -1709,7 +1709,12 @@ export class MessageBridge {
       return;
     }
 
-    const apiContext = { botName: this.config.name, chatId };
+    const apiContext = {
+      botName: this.config.name,
+      chatId,
+      memoryNamespace: this.config.memoryNamespace,
+      memoryProject: this.config.memoryProject,
+    };
 
     const rateLimiter = new RateLimiter(1500);
 
@@ -2189,7 +2194,14 @@ export class MessageBridge {
     const effectiveMessageId = messageId || `api-${chatId}-${Date.now()}`;
     options.onUpdate?.(initialState, effectiveMessageId, false);
 
-    const apiContext = { botName: this.config.name, chatId, groupMembers: options.groupMembers, groupId: options.groupId };
+    const apiContext = {
+      botName: this.config.name,
+      chatId,
+      memoryNamespace: this.config.memoryNamespace,
+      memoryProject: this.config.memoryProject,
+      groupMembers: options.groupMembers,
+      groupId: options.groupId,
+    };
 
     // Forward-declare for the onTeamEvent closure below (only assigned once;
     // const cannot be uninitialised — see same pattern in executeQuery).
