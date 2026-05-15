@@ -158,6 +158,10 @@ function createSpawnFn(explicitApiKey?: string): (options: SpawnOptions) => Spaw
 export interface ApiContext {
   botName: string;
   chatId: string;
+  /** Stable writable MetaMemory namespace for this bot/chat. */
+  memoryNamespace?: string;
+  /** Optional project identifier used to derive the namespace. */
+  memoryProject?: string;
   /** Group chat member names — enables inter-bot communication prompt. */
   groupMembers?: string[];
   /** Group ID — used to build grouptalk chatIds for inter-bot communication. */
@@ -340,6 +344,23 @@ export class ClaudeExecutor {
       appendSections.push(
         `## MetaBot API\nYou are running as bot "${apiContext.botName}" in chat "${apiContext.chatId}".\nUse the /metabot skill for full API documentation (agent bus, scheduling, bot management).`
       );
+
+      if (apiContext.memoryNamespace) {
+        appendSections.push(
+          [
+            '## MetaMemory',
+            `Default writable namespace for this bot: \`${apiContext.memoryNamespace}\`.`,
+            'When saving project or bot-owned knowledge, write under this namespace instead of the instance fallback. Use shared/project folders outside this namespace only when the user explicitly asks to publish shared knowledge.',
+          ].join('\n')
+        );
+        const existingEnv = (queryOptions.env as Record<string, string> | undefined) ?? {};
+        queryOptions.env = {
+          ...existingEnv,
+          METABOT_MEMORY_NAMESPACE: apiContext.memoryNamespace,
+          METABOT_BOT_MEMORY_NAMESPACE: apiContext.memoryNamespace,
+          ...(apiContext.memoryProject ? { METABOT_MEMORY_PROJECT: apiContext.memoryProject } : {}),
+        };
+      }
 
       // Agent Teams namespace guidance: the team config lives at
       // ~/.claude/teams/{name}/, which is shared across all bots and chats

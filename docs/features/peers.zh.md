@@ -86,7 +86,7 @@ METABOT_CLUSTER_SECRET=optional-token
 curl http://localhost:9100/api/manifest
 ```
 
-manifest 包含实例 ID/name、公钥、能力标记、endpoint path、memory namespace、本地/peer Bot 和 Skill 数量，不包含 secret。
+manifest 包含实例 ID/name、公钥、能力标记、endpoint path、memory namespace、可写 memory namespaces、本地/peer Bot 和 Skill 数量，不包含 secret。
 
 ## 限定名
 

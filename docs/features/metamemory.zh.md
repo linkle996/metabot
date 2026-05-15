@@ -71,7 +71,7 @@ MetaMemory 支持文件夹级 ACL 和实例级 scoped token：
 |-------|---------|
 | `MEMORY_ADMIN_TOKEN` | 完整访问 — 可见所有文件夹 |
 | `MEMORY_TOKEN` | 读者访问 — 仅可见 shared 文件夹 |
-| `MEMORY_INSTANCE_TOKEN` | 实例访问 — 可写 `METABOT_MEMORY_NAMESPACE`，可读 shared 文件夹 |
+| `MEMORY_INSTANCE_TOKEN` | 实例访问 — 可写实例 namespace 以及已配置的 bot/project namespace，可读 shared 文件夹 |
 
 每个 MetaBot 实例会从 `~/.metabot/identity.json` 获得稳定身份。默认可写 namespace：
 
@@ -91,11 +91,36 @@ MetaMemory 支持文件夹级 ACL 和实例级 scoped token：
 | `MEMORY_PORT` | `8100` | MetaMemory 端口 |
 | `MEMORY_ADMIN_TOKEN` | — | 管理员 Token（完整访问） |
 | `MEMORY_TOKEN` | — | 读者 Token（仅 shared） |
-| `MEMORY_INSTANCE_TOKEN` | — | 当前实例 namespace 的 scoped token |
+| `MEMORY_INSTANCE_TOKEN` | — | 当前实例以及已配置 bot/project namespace 的 scoped token |
 | `META_MEMORY_URL` | `http://localhost:8100` | MetaMemory 地址（CLI 用） |
-| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 当前实例默认 namespace |
+| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | 当前实例兜底 namespace |
+| `METABOT_BOT_MEMORY_NAMESPACE` | `/bots/default` | 单 Bot 稳定 namespace 覆盖 |
+| `METABOT_MEMORY_PROJECT` | — | 单 Bot 项目名；推导 `/projects/<slug>` |
+| `METABOT_MEMORY_WRITE_NAMESPACES` | — | 额外可写 namespace，逗号分隔 |
 | `METABOT_PEER_MEMORY_CACHE_ENABLED` | `true` | 将 peer MetaMemory 文档镜像到本地只读 cache |
 | `METABOT_PEER_MEMORY_CACHE_LIMIT` | `200` | 每次 peer 拉取最多镜像的 memory 文档数 |
+
+## 稳定项目 Namespace
+
+MetaBot 保留 `/instances/<instanceId>` 作为安全兜底，但 bot 自己长期维护的知识应该使用重装机器也不变的稳定 namespace。在 `bots.json` 中可以设置：
+
+```json
+{
+  "name": "metabot",
+  "memoryProject": "metabot"
+}
+```
+
+它会推导出 `/projects/metabot`。也可以显式指定：
+
+```json
+{
+  "name": "metabot",
+  "memoryNamespace": "/projects/metabot"
+}
+```
+
+如果两个字段都没设置，bot 默认使用 `/bots/<botName>`。`MEMORY_INSTANCE_TOKEN` 会自动获得实例兜底 namespace 以及所有已配置 bot/project namespace 的写权限。
 
 ## Peer 镜像
 

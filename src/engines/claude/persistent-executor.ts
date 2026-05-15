@@ -376,6 +376,22 @@ export class PersistentClaudeExecutor extends EventEmitter {
       appendSections.push(
         `## MetaBot API\nYou are running as bot "${ctx.botName}" in chat "${ctx.chatId}".\nUse the /metabot skill for full API documentation (agent bus, scheduling, bot management).`,
       );
+      if (ctx.memoryNamespace) {
+        appendSections.push(
+          [
+            '## MetaMemory',
+            `Default writable namespace for this bot: \`${ctx.memoryNamespace}\`.`,
+            'When saving project or bot-owned knowledge, write under this namespace instead of the instance fallback. Use shared/project folders outside this namespace only when the user explicitly asks to publish shared knowledge.',
+          ].join('\n'),
+        );
+        const existingEnv = (queryOptions.env as Record<string, string> | undefined) ?? {};
+        queryOptions.env = {
+          ...existingEnv,
+          METABOT_MEMORY_NAMESPACE: ctx.memoryNamespace,
+          METABOT_BOT_MEMORY_NAMESPACE: ctx.memoryNamespace,
+          ...(ctx.memoryProject ? { METABOT_MEMORY_PROJECT: ctx.memoryProject } : {}),
+        };
+      }
       if (ctx.groupMembers && ctx.groupMembers.length > 0) {
         const others = ctx.groupMembers.filter((m) => m !== ctx.botName);
         if (ctx.groupId) {

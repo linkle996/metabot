@@ -221,6 +221,7 @@ async function main() {
       instanceToken: appConfig.memory.instanceToken,
       instanceId: appConfig.instance.instanceId,
       memoryNamespace: appConfig.memory.namespace,
+      memoryNamespaces: appConfig.memory.namespaces,
       logger,
     });
   }

@@ -72,7 +72,7 @@ MetaMemory supports folder-level ACL plus scoped instance tokens:
 |-------|--------|
 | `MEMORY_ADMIN_TOKEN` | Full access — sees all folders |
 | `MEMORY_TOKEN` | Reader access — shared folders only |
-| `MEMORY_INSTANCE_TOKEN` | Instance access — writes `METABOT_MEMORY_NAMESPACE`, reads shared folders |
+| `MEMORY_INSTANCE_TOKEN` | Instance access — writes the instance namespace plus configured bot/project namespaces, reads shared folders |
 
 Every MetaBot instance gets a stable identity from `~/.metabot/identity.json`. By default its writable namespace is:
 
@@ -92,11 +92,36 @@ See [Security](../concepts/security.md#metamemory-access-control) for details.
 | `MEMORY_PORT` | `8100` | MetaMemory port |
 | `MEMORY_ADMIN_TOKEN` | — | Admin token (full access) |
 | `MEMORY_TOKEN` | — | Reader token (shared only) |
-| `MEMORY_INSTANCE_TOKEN` | — | Scoped token for this instance namespace |
+| `MEMORY_INSTANCE_TOKEN` | — | Scoped token for this instance plus configured bot/project namespaces |
 | `META_MEMORY_URL` | `http://localhost:8100` | MetaMemory URL (for CLI) |
-| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | Default namespace for this instance |
+| `METABOT_MEMORY_NAMESPACE` | `/instances/<instanceId>` | Instance fallback namespace |
+| `METABOT_BOT_MEMORY_NAMESPACE` | `/bots/default` | Single-bot stable namespace override |
+| `METABOT_MEMORY_PROJECT` | — | Single-bot project name; derives `/projects/<slug>` |
+| `METABOT_MEMORY_WRITE_NAMESPACES` | — | Extra comma-separated writable namespaces |
 | `METABOT_PEER_MEMORY_CACHE_ENABLED` | `true` | Mirror peer MetaMemory documents into local read-only cache |
 | `METABOT_PEER_MEMORY_CACHE_LIMIT` | `200` | Maximum peer memory documents mirrored per peer poll |
+
+## Stable Project Namespaces
+
+MetaBot keeps `/instances/<instanceId>` as a safe fallback, but bot-owned knowledge should use a stable namespace that survives reinstalling a machine. In `bots.json`, set either:
+
+```json
+{
+  "name": "metabot",
+  "memoryProject": "metabot"
+}
+```
+
+which derives `/projects/metabot`, or set an explicit namespace:
+
+```json
+{
+  "name": "metabot",
+  "memoryNamespace": "/projects/metabot"
+}
+```
+
+If neither field is set, the bot defaults to `/bots/<botName>`. `MEMORY_INSTANCE_TOKEN` is automatically granted write access to the instance fallback plus all configured bot/project namespaces.
 
 ## Peer Mirror
 

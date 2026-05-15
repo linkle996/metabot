@@ -29,6 +29,7 @@ export interface MemoryServerOptions {
   instanceToken?: string;
   instanceId?: string;
   memoryNamespace?: string;
+  memoryNamespaces?: string[];
   logger: Logger;
 }
 
@@ -115,9 +116,14 @@ function resolveStaticDir(): string {
 }
 
 export function startMemoryServer(options: MemoryServerOptions): { server: http.Server; storage: MemoryStorage } {
-  const { port, databaseDir, secret, adminToken, readerToken, instanceToken, instanceId, memoryNamespace, logger } = options;
+  const { port, databaseDir, secret, adminToken, readerToken, instanceToken, instanceId, memoryNamespace, memoryNamespaces, logger } = options;
   const storage = new MemoryStorage(databaseDir, logger);
   const staticDir = resolveStaticDir();
+  const writableNamespaces = memoryNamespaces?.length
+    ? memoryNamespaces
+    : memoryNamespace
+      ? [memoryNamespace]
+      : [];
 
   // Auth is enabled if any token is configured
   const authEnabled = !!(adminToken || readerToken || instanceToken || secret);
@@ -137,11 +143,11 @@ export function startMemoryServer(options: MemoryServerOptions): { server: http.
     if (!token) return null;
     if (adminToken && token === adminToken) return 'admin';
     if (readerToken && token === readerToken) return 'reader';
-    if (instanceToken && token === instanceToken && memoryNamespace) {
+    if (instanceToken && token === instanceToken && writableNamespaces.length > 0) {
       return {
         role: 'reader',
         instanceId,
-        grants: [{ namespace: memoryNamespace, access: 'write' }],
+        grants: writableNamespaces.map((namespace) => ({ namespace, access: 'write' as const })),
       };
     }
     // Legacy: old secret token gets admin access for backward compat

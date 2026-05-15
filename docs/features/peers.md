@@ -88,7 +88,7 @@ Each instance exposes a low-risk manifest for federation:
 curl http://localhost:9100/api/manifest
 ```
 
-The manifest includes instance ID/name, public key, capability flags, endpoint paths, memory namespace, and local/peer bot and skill counts. It intentionally does not include secrets.
+The manifest includes instance ID/name, public key, capability flags, endpoint paths, memory namespace, writable memory namespaces, and local/peer bot and skill counts. It intentionally does not include secrets.
 
 ## Qualified Names
 

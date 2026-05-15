@@ -205,6 +205,8 @@ export class PeerManager {
           engine?: BotInfo['engine'];
           model?: string;
           workingDirectory: string;
+          memoryNamespace?: string;
+          memoryProject?: string;
           peerUrl?: string;
         }>;
       };
@@ -219,6 +221,8 @@ export class PeerManager {
           engine: b.engine ?? 'claude',
           ...(b.model ? { model: b.model } : {}),
           workingDirectory: b.workingDirectory,
+          ...(b.memoryNamespace ? { memoryNamespace: b.memoryNamespace } : {}),
+          ...(b.memoryProject ? { memoryProject: b.memoryProject } : {}),
           peerUrl: config.url,
           peerName: config.name,
         }));

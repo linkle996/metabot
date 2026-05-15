@@ -133,8 +133,9 @@ MetaBot keeps the user-facing names **MetaMemory** and **Skill Hub**. Internally
 
 - Stable instance identity at `~/.metabot/identity.json`
 - `GET /api/manifest` for instance identity, capabilities, endpoint paths, memory namespace, and local/peer counts
-- `METABOT_MEMORY_NAMESPACE` defaulting to `/instances/<instanceId>`
-- `MEMORY_INSTANCE_TOKEN` scoped writes to the instance namespace
+- `METABOT_MEMORY_NAMESPACE` as an instance fallback at `/instances/<instanceId>`
+- Per-bot stable memory namespaces via `memoryProject` (`/projects/<slug>`) or `memoryNamespace`
+- `MEMORY_INSTANCE_TOKEN` scoped writes to the instance fallback plus configured bot/project namespaces
 - Skill owner metadata: `ownerInstanceId`, `ownerInstanceName`, `visibility`, `contentHash`
 - `METABOT_CLUSTER_URL` bootstrap peer support
 
