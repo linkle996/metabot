@@ -24,7 +24,7 @@
     "@moonshot-ai/kimi-agent-sdk": "^0.1.8",
     "@types/ws": "^8.18.0",
     "@volcengine/openapi": "^1.36.0",
-    "better-sqlite3": "^12.6.2",
+    "better-sqlite3": "^12.9.0",
     "cron-parser": "^5.5.0",
     "dotenv": "^16.4.0",
     "grammy": "^1.40.0",

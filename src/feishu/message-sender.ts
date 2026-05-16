@@ -196,4 +196,19 @@ export class MessageSender {
       this.logger.error({ err, chatId }, 'Failed to send text');
     }
   }
+
+  async sendPost(chatId: string, postContent: Record<string, unknown>): Promise<void> {
+    try {
+      await this.client.im.v1.message.create({
+        params: { receive_id_type: 'chat_id' },
+        data: {
+          receive_id: chatId,
+          content: JSON.stringify(postContent),
+          msg_type: 'post',
+        },
+      });
+    } catch (err) {
+      this.logger.error({ err, chatId }, 'Failed to send post');
+    }
+  }
 }

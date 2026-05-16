@@ -419,6 +419,8 @@ export class TelegramSender implements IMessageSender {
     }
   }
 
+  async sendPost(_chatId: string, _postContent: Record<string, unknown>): Promise<void> { /* Telegram has no Post equivalent */ }
+
   async sendText(chatId: string, text: string): Promise<void> {
     try {
       const truncated = truncateMessage(text);

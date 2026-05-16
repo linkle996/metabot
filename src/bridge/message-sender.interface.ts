@@ -17,6 +17,9 @@ export interface IMessageSender {
   /** Send a plain text message. */
   sendText(chatId: string, text: string): Promise<void>;
 
+  /** Send a rich text (Feishu Post) message. No-op for non-Feishu platforms. */
+  sendPost(chatId: string, postContent: Record<string, unknown>): Promise<void>;
+
   /** Send a local image file to the chat. */
   sendImageFile(chatId: string, filePath: string): Promise<boolean>;
 

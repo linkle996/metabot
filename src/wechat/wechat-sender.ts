@@ -91,6 +91,8 @@ export class WechatSender implements IMessageSender {
     await this.sendText(chatId, text);
   }
 
+  async sendPost(_chatId: string, _postContent: Record<string, unknown>): Promise<void> { /* WeChat has no Post equivalent */ }
+
   async sendText(chatId: string, text: string): Promise<void> {
     try {
       const chunks = splitLongText(text, MAX_TEXT_LENGTH);

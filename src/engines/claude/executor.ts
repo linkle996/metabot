@@ -64,8 +64,6 @@ function createSpawnFn(explicitApiKey?: string): (options: SpawnOptions) => Spaw
   const filterAuthVars = !!(explicitApiKey || hasCredentialsFile());
 
   return (options: SpawnOptions): SpawnedProcess => {
-    const nodePath = process.execPath;
-
     // Merge provided env with process.env for a complete environment
     const baseEnv = options.env && Object.keys(options.env).length > 0
       ? { ...process.env, ...options.env }
@@ -85,7 +83,51 @@ function createSpawnFn(explicitApiKey?: string): (options: SpawnOptions) => Spaw
       env.ANTHROPIC_API_KEY = explicitApiKey;
     }
 
-    const child = spawn(nodePath, options.args, {
+    // On Windows, run through WSL so Claude Code's bash tool runs in
+    // a real Linux environment (WSL_DISTRO_NAME, uname, etc. are all correct).
+    const useWsl = isWindows;
+
+    // Convert Windows paths (C:\foo\bar) to WSL paths (/mnt/c/foo/bar).
+    // Windows backslashes are interpreted as bash escapes, causing errors.
+    const toWslPath = (p: string): string => {
+      if (!/^[A-Z]:[\\/]/.test(p)) return p;
+      return `/mnt/${p[0].toLowerCase()}${p.slice(2).replace(/\\/g, '/')}`;
+    };
+
+    // WSL does not forward env vars by default.  Write them to a temp
+    // shell script, then source it inside WSL before exec-ing node.
+    // Exclude vars that contain shell-special chars or are Windows-only.
+    const skipExport = new Set([
+      'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'SYSTEMDRIVE',
+      'TEMP', 'TMP', 'USERPROFILE', 'ALLUSERSPROFILE', 'PROGRAMDATA',
+      'PROGRAMFILES', 'PROGRAMFILES(X86)', 'COMMONPROGRAMFILES',
+      'COMMONPROGRAMFILES(X86)', 'ONEDRIVE', 'HOMEDRIVE', 'HOMEPATH',
+      'COMPUTERNAME', 'PROCESSOR_ARCHITECTURE', 'PROCESSOR_IDENTIFIER',
+      'PROCESSOR_LEVEL', 'PROCESSOR_REVISION', 'NUMBER_OF_PROCESSORS',
+      'OS', 'COMSPEC', 'DRIVERDATA', 'PSMODULEPATH', 'PUBLIC',
+      'LOCALAPPDATA', 'APPDATA', 'LOGONSERVER', 'USERDOMAIN',
+      'USERDOMAIN_ROAMINGPROFILE', 'USERNAME', 'SESSIONNAME',
+      'NVM_HOME', 'NVM_SYMLINK', 'OPENSSL_CONF',
+    ]);
+    const exports = Object.entries(env)
+      .filter(([k, v]) => v != null && v !== '' && !skipExport.has(k.toUpperCase()))
+      .map(([k, v]) => `export ${k}='${String(v).replace(/'/g, "'\\''")}'`)
+      .join('\n');
+
+    // Write to a temp file (Windows side) so the WSL wrapper can source it.
+    // The wrapper at /home/linkl/metabot-node.sh takes the env file as its
+    // first argument, sources it, deletes it, then execs node with the rest.
+    const envFile = path.join(os.tmpdir(), `.metabot-env-${Date.now()}.sh`);
+    fs.writeFileSync(envFile, exports, 'utf-8');
+    const wslEnvFile = toWslPath(envFile);
+    const wslArgs = options.args.map(toWslPath);
+
+    const spawnCmd = useWsl ? 'wsl' : process.execPath;
+    const spawnArgs = useWsl
+      ? ['-d', 'Ubuntu', '--', '/home/linkl/metabot-node.sh', wslEnvFile, ...wslArgs]
+      : options.args;
+
+    const child = spawn(spawnCmd, spawnArgs, {
       cwd: options.cwd,
       env,
       signal: options.signal,
@@ -254,9 +296,8 @@ export class ClaudeExecutor {
       queryOptions.resume = sessionId;
     }
 
-    // Beta flags are ignored by the SDK on OAuth/Pro-Max auth. For 1M context,
-    // use the model-name suffix `[1m]` (e.g. `claude-opus-4-7[1m]`) instead.
-    queryOptions.betas = ['context-1m-2025-08-07'];
+    // Note: the `[1m]` model-name suffix can be used to request 1M context
+    // (e.g. `deepseek-v4-pro[1m]`). Remove the suffix for faster responses.
 
     return queryOptions;
   }

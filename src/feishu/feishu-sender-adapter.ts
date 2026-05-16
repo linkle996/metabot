@@ -33,6 +33,10 @@ export class FeishuSenderAdapter implements IMessageSender {
     return this.sender.sendText(chatId, text);
   }
 
+  async sendPost(chatId: string, postContent: Record<string, unknown>): Promise<void> {
+    return this.sender.sendPost(chatId, postContent);
+  }
+
   async sendImageFile(chatId: string, filePath: string): Promise<boolean> {
     return this.sender.sendImageFile(chatId, filePath);
   }

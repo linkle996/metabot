@@ -12,6 +12,7 @@ import { RateLimiter } from './rate-limiter.js';
 import { OutputsManager } from './outputs-manager.js';
 import { MemoryClient } from '../memory/memory-client.js';
 import { AuditLogger } from '../utils/audit-logger.js';
+import { markdownToPost } from '../feishu/post-builder.js';
 import { CommandHandler } from './command-handler.js';
 import { OutputHandler } from './output-handler.js';
 import { CostTracker } from '../utils/cost-tracker.js';
@@ -955,6 +956,18 @@ export class MessageBridge {
 
       // Send completion notification for long-running tasks (>10s) so user gets a Feishu push
       await this.sendCompletionNotice(chatId, lastState, durationMs);
+
+      // Send a Post (rich text) version of the final response for better mobile readability
+      if (lastState.responseText && lastState.status === 'complete') {
+        try {
+          const postContent = markdownToPost(lastState.responseText, {
+            title: displayPrompt?.slice(0, 200),
+          });
+          await this.sender.sendPost(chatId, postContent);
+        } catch {
+          // Post delivery is best-effort; never block the main flow
+        }
+      }
 
       // Send any output files produced by Claude
       await this.outputHandler.sendOutputFiles(chatId, outputsDir, processor, lastState);
